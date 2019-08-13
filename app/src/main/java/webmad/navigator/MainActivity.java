@@ -5,8 +5,11 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import com.here.android.mpa.common.GeoCoordinate;
@@ -19,12 +22,18 @@ import com.here.android.mpa.routing.RouteManager;
 import com.here.android.mpa.routing.RouteOptions;
 import com.here.android.mpa.routing.RoutePlan;
 import com.here.android.mpa.routing.RouteResult;
+import com.here.android.mpa.search.ErrorCode;
+import com.here.android.mpa.search.GeocodeRequest;
+import com.here.android.mpa.search.GeocodeResult;
+import com.here.android.mpa.search.ResultListener;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -33,14 +42,25 @@ public class MainActivity extends FragmentActivity {
     Map map = null;
     Button btn;
     EditText searchField;
+    ListView placesList;
+    ArrayList<String> places;
+    ArrayAdapter<String> searchResultsAdapter;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 
+
+        placesList = findViewById(R.id.places_list);
+
+        places = new ArrayList<>();
+        searchResultsAdapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1, places);
+        placesList.setAdapter(searchResultsAdapter);
+
         btn = findViewById(R.id.setAss);
         searchField = findViewById(R.id.search_field);
+        final FrameLayout listActivity = findViewById(R.id.list_activity);
 
         final SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.mapfragment);
         // initialize the Map Fragment and
@@ -59,6 +79,50 @@ public class MainActivity extends FragmentActivity {
                     System.out.println("ERROR: Cannot initialize SupportMapFragment");
                 }
             }
+        });
+
+        searchField.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View view, int i, KeyEvent keyEvent) {
+                if (searchField.getText().toString().equals("")) {
+                    listActivity.setVisibility(View.GONE);
+                    return false;
+                }
+
+                listActivity.setVisibility(View.VISIBLE);
+
+                ResultListener<List<GeocodeResult>> listener = new ResultListener<List<GeocodeResult>>() {
+                    @Override
+                    public void onCompleted(List<GeocodeResult> geocodeResults, ErrorCode errorCode) {
+                        if(errorCode != ErrorCode.NONE) {
+                            System.out.println("ERROR: Cannot get results");
+                            //handle error
+                        }
+                        else {
+                            int i = 0;
+                            System.out.println(geocodeResults);
+                            places.clear();
+                            for(GeocodeResult result : geocodeResults) {
+                                places.add(i, result.getLocation().getAddress().getText());
+                                System.out.println(result.getLocation().getAddress().getText());
+                                i++;
+                            }
+
+                            System.out.println("Everything is ok");
+                        }
+                    }
+                };
+                GeocodeRequest request = new GeocodeRequest(String.valueOf(searchField.getText())).setSearchArea(new GeoCoordinate(46.347869, 48.033574), 5000);
+                if (request.execute(listener) != ErrorCode.NONE) {
+                    // Handle request error
+                    System.out.println("ERROR: Cannot get results");
+                }
+
+                searchResultsAdapter.notifyDataSetChanged();
+
+                return false;
+            }
+
         });
 
         btn.setOnClickListener(new View.OnClickListener() {
@@ -109,6 +173,31 @@ public class MainActivity extends FragmentActivity {
                 // Display a message indicating route calculation failure
             }
 
+        }
+    }
+
+    public class GeocodeListener implements ResultListener<List<GeocodeResult>> {
+
+        @Override
+        public void onCompleted(List<GeocodeResult> geocodeResults, ErrorCode errorCode) {
+            if(errorCode != ErrorCode.NONE) {
+                System.out.println("ERROR: это пиздец");
+                //handle error
+            }
+            else {
+                int i = 0;
+                System.out.println(geocodeResults);
+
+                for(GeocodeResult result : geocodeResults) {
+                    places.add(i, result.getLocation().getAddress().getText());
+                    System.out.println(result.getLocation().getAddress().getText());
+                    i++;
+                }
+
+                searchResultsAdapter.notifyDataSetChanged();
+
+                System.out.println("Everything is ok");
+            }
         }
     }
 }
