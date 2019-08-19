@@ -1,5 +1,6 @@
 package webmad.navigator;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
@@ -91,34 +92,14 @@ public class MainActivity extends FragmentActivity {
 
                 listActivity.setVisibility(View.VISIBLE);
 
-                ResultListener<List<GeocodeResult>> listener = new ResultListener<List<GeocodeResult>>() {
-                    @Override
-                    public void onCompleted(List<GeocodeResult> geocodeResults, ErrorCode errorCode) {
-                        if(errorCode != ErrorCode.NONE) {
-                            System.out.println("ERROR: Cannot get results");
-                            //handle error
-                        }
-                        else {
-                            int i = 0;
-                            System.out.println(geocodeResults);
-                            places.clear();
-                            for(GeocodeResult result : geocodeResults) {
-                                places.add(i, result.getLocation().getAddress().getText());
-                                System.out.println(result.getLocation().getAddress().getText());
-                                i++;
-                            }
+                ResultListener<List<GeocodeResult>> listener = new GeocodeListener();
 
-                            System.out.println("Everything is ok");
-                        }
-                    }
-                };
+
                 GeocodeRequest request = new GeocodeRequest(String.valueOf(searchField.getText())).setSearchArea(new GeoCoordinate(46.347869, 48.033574), 5000);
                 if (request.execute(listener) != ErrorCode.NONE) {
                     // Handle request error
                     System.out.println("ERROR: Cannot get results");
                 }
-
-                searchResultsAdapter.notifyDataSetChanged();
 
                 return false;
             }
@@ -177,27 +158,31 @@ public class MainActivity extends FragmentActivity {
     }
 
     public class GeocodeListener implements ResultListener<List<GeocodeResult>> {
-
         @Override
         public void onCompleted(List<GeocodeResult> geocodeResults, ErrorCode errorCode) {
             if(errorCode != ErrorCode.NONE) {
-                System.out.println("ERROR: это пиздец");
+                System.out.println("ERROR: Cannot get results");
                 //handle error
             }
             else {
                 int i = 0;
                 System.out.println(geocodeResults);
-
+                places.clear();
                 for(GeocodeResult result : geocodeResults) {
                     places.add(i, result.getLocation().getAddress().getText());
                     System.out.println(result.getLocation().getAddress().getText());
                     i++;
                 }
+                runOnUiThread(new Runnable(){
 
-                searchResultsAdapter.notifyDataSetChanged();
-
+                @Override
+                public void run() {
+                    searchResultsAdapter.notifyDataSetChanged();
+                }});
                 System.out.println("Everything is ok");
+
             }
+
         }
     }
 }
