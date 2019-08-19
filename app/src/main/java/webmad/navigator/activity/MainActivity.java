@@ -1,4 +1,4 @@
-package webmad.navigator;
+package webmad.navigator.activity;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -38,13 +38,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import webmad.navigator.R;
+
 public class MainActivity extends FragmentActivity {
 
     Map map = null;
     Button btn;
     EditText searchField;
     ListView placesList;
-    ArrayList<String> places;
+    ArrayList<String> places = new ArrayList<>();
     ArrayAdapter<String> searchResultsAdapter;
 
     @Override
@@ -52,36 +54,14 @@ public class MainActivity extends FragmentActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 
-
+        //Создание и привязка адаптера к поиску для автоподстановки
         placesList = findViewById(R.id.places_list);
-
-        places = new ArrayList<>();
-        searchResultsAdapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1, places);
+        searchResultsAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, places);
         placesList.setAdapter(searchResultsAdapter);
 
-        btn = findViewById(R.id.setAss);
-        searchField = findViewById(R.id.search_field);
-        final FrameLayout listActivity = findViewById(R.id.list_activity);
-
-        final SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.mapfragment);
-        // initialize the Map Fragment and
-        // retrieve the map that is associated to the fragment
-
-        assert mapFragment != null;
-        mapFragment.init(new OnEngineInitListener() {
-
-            @Override
-            public void onEngineInitializationCompleted(Error error) {
-                if (error == Error.NONE) {
-                    // now the map is ready to be used
-                    map = mapFragment.getMap();
-                    // ...
-                } else {
-                    System.out.println("ERROR: Cannot initialize SupportMapFragment");
-                }
-            }
-        });
-
+        //Все, что связано с полем, установка слушателя на зменение поля
+        final FrameLayout listActivity = findViewById(R.id.list_activity); //получение фрейма, где хранится ListView с результатами поиска.
+        searchField = findViewById(R.id.search_field); //поле поиска
         searchField.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View view, int i, KeyEvent keyEvent) {
@@ -89,11 +69,9 @@ public class MainActivity extends FragmentActivity {
                     listActivity.setVisibility(View.GONE);
                     return false;
                 }
-
                 listActivity.setVisibility(View.VISIBLE);
 
                 ResultListener<List<GeocodeResult>> listener = new GeocodeListener();
-
 
                 GeocodeRequest request = new GeocodeRequest(String.valueOf(searchField.getText())).setSearchArea(new GeoCoordinate(46.347869, 48.033574), 5000);
                 if (request.execute(listener) != ErrorCode.NONE) {
@@ -106,16 +84,34 @@ public class MainActivity extends FragmentActivity {
 
         });
 
-        btn.setOnClickListener(new View.OnClickListener() {
+        // initialize the Map Fragment and
+        // retrieve the map that is associated to the fragment
+        final SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.mapfragment);
+        mapFragment.init(new OnEngineInitListener() {
+            @Override
+            public void onEngineInitializationCompleted(Error error) {
+                if (error == Error.NONE) {
+                    // now the map is ready to be used
+                    map = mapFragment.getMap();
+                    // ...
+                } else {
+                    System.out.println("ERROR: Cannot initialize SupportMapFragment");
+                }
+            }
+        });
+
+        //кнопка для прокладки маршрута между астраханью и берлином и установкой центром карты Астрахань
+        btn = findViewById(R.id.setAss);
+        btn.setOnClickListener(new View.OnClickListener() {//вешаем листенер
             @Override
             public void onClick(View view) {
-
-
                 setAssTrahan();
             }
         });
+
     }
 
+    //не обращайте внимания -_-
     protected void setAssTrahan() {
         RouteManager rm = new RouteManager();
 
@@ -134,6 +130,7 @@ public class MainActivity extends FragmentActivity {
         map.setCenter(new GeoCoordinate(46.347869, 48.033574), Map.Animation.LINEAR);
     }
 
+    //listener для прокладки маршрута
     public class RouteListener implements RouteManager.Listener {
 
         @Override
@@ -157,6 +154,7 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
+    //listener для автоподстановки
     public class GeocodeListener implements ResultListener<List<GeocodeResult>> {
         @Override
         public void onCompleted(List<GeocodeResult> geocodeResults, ErrorCode errorCode) {
