@@ -17,18 +17,12 @@ import com.here.android.mpa.search.ResultListener;
 import java.util.ArrayList;
 import java.util.List;
 
-import webmad.navigator.activity.MainActivity;
-
 public class SearchController {
 
-    private ListView placesList;
-    ArrayList<String> places = new ArrayList<>();
-    ArrayAdapter<String> searchResultsAdapter;
-    private FrameLayout listActivity;
+    private ArrayList<String> places = new ArrayList<>();
+    private ArrayAdapter<String> searchResultsAdapter;
 
     public SearchController(final Activity activity, ListView placesList, final FrameLayout listActivity, final EditText searchField) {
-        this.placesList = placesList;
-        this.listActivity = listActivity;
 
         searchResultsAdapter = new ArrayAdapter<String>(activity, android.R.layout.simple_list_item_1, this.places);
         placesList.setAdapter(searchResultsAdapter);
